@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQTT Test Document</title>
+
+    <!-- <script src="./paho-mqtt.js" type="text/javascript"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+
+        var mqtt;
+        var connected = false;
+        const reconnectTimeout = 2000;
+        const host = "mqtt.eclipse.org"
+        const port = "443"   // web sockets
+        const options = {
+            useSSL: true,
+            // userName: "username",
+            // password: "password",
+            onSuccess:onConnect,
+            onFailure:doFail
+        }
+
+        // This function is just a template for subscribe and send code
+        function send_template(){
+            client.subscribe("World");
+            message = new Paho.MQTT.Message("Hello");
+            message.destinationName = "World";
+            client.send(message);
+        }
+
+        // called when the client connects
+        function onConnect() {
+            connected = true;
+            // Once a connection has been made, make a subscription and send a message.
+            console.log("onConnect");
+            document.getElementById("status_bar").innerHTML = "Connected!"
+            
+        }
+
+        // Function called when connection fails
+        function doFail(e){
+            console.log(e);
+            connected = false;
+        }
+
+        // called when the client loses its connection
+        function onConnectionLost(responseObject) {
+            connected = false;
+            if (responseObject.errorCode !== 0) {
+                console.log("onConnectionLost:"+responseObject.errorMessage);
+            }
+        }
+
+        // called when a message arrives
+        function onMessageArrived(message) {
+            console.log("onMessageArrived:"+message.payloadString);
+            document.getElementById("rx_data").innerHTML=message.payloadString;
+        }
+
+        // should be called when connect button is pressed.
+        function mqttConnect(){
+            connected = true;
+            // Create a client instance
+            client = new Paho.MQTT.Client(host, Number(port), "clientId");
+            // set callback handlers
+            client.onConnectionLost = onConnectionLost;
+            client.onMessageArrived = onMessageArrived;
+            // connect the client
+            client.connect(options);   
+        }
+
+        // Send Data from text area.
+        function sendData(){
+            if ( connected == false){
+                mqttConnect()
+            }
+            var data = document.getElementById("tx_data").value;
+            console.log("Sending data " + data)
+            message = new Paho.MQTT.Message(data);
+            message.destinationName = "ip_v1/BLE_light_all/RGBW";
+            client.send(message);
+        }
+        
+    </script>
+    <style>
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>MQTT Test Client</h1>
+        <p>This page allows me to experiment with MQTT using Web sockets. </p>
+    </header>
+    
+    <div id="rx_data_div">
+        <p id="rx_data">
+            Waiting to connect...
+        </p>
+    </div>
+
+    <section id="user_inputs">
+        <div>
+            <button onclick="mqttConnect()"> 
+                Click to connect
+            </button>
+        </div>
+        <br>
+
+        <div>
+            <textarea name="text_area" id="tx_data" cols="30" rows="1"></textarea>
+            <button onclick="sendData()">
+                Send
+            </button>
+        </div>
+    </section>
+    <br>
+
+    <hr>
+    <section id="status_bar_section">
+        <p id="status_bar">Status bar</p>
+    </section>
+    <hr>
+
+</body>
+</html>
